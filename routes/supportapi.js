@@ -1366,14 +1366,12 @@ router.post('/deleteGlobtech', async (req, res) => {
 
 /* ------------------------------- End GlobeTech API ----------------------------------- */
 
-
 /* submit Rating And Review API */
 router.post('/submitRatingAndReview', async (req, res) => {
 	var name = req.body.name;
 	var type = req.body.type;
 	var review = req.body.review;
 	var rating = req.body.rating;
-	var rating = req.body.rating;	
 	var user_id = req.body.user_id;
 	var product_id = req.body.product_id;
 
@@ -1382,46 +1380,16 @@ router.post('/submitRatingAndReview', async (req, res) => {
 	ratingpost.type = type;
 	ratingpost.review = review;
 	ratingpost.rating = rating;	
-	ratingpost.ratings = rating;	
 	ratingpost.user_id = user_id;
 	ratingpost.product_id = product_id;
 	ratingpost.created_at = moment().format("ll");
 	if(name != '' && review != '' && rating != '' && user_id != '' && product_id != '')
 	{
-		try{
+		try
+		{
 			await ratingpost.save();
 			res.status(HttpStatus.CREATED).json({status : HttpStatus.CREATED, msg :"rating submit successfully"});
 			return;
-
-			// var lastID = (ratingpost._id).toString();
-			// console.log('-> lastID : ', lastID);
-
-			// var lastRatings = (ratingpost.ratings);
-			// console.log('-> lastRatings :', lastRatings);
-
-			// var newRating = req.body.rating	
-			
-			// var tatalrating = lastRatings + newRating;
-
-			// console.log('tatalrating', tatalrating);
-
-			// var ratingcount = await ratingSchema.find().count();
-			// console.log('Count', ratingcount);
-
-
-			// const admin_data = await ratingSchema.update(
-			// 	{_id : ratingpost.lastID },
-			// 	{$set : {ratings : tatalrating, average_rating: average_rating}}
-			// );
-
-			
-			// let  allratings = await ratingSchema.findOne(); 
-			// console.log('-> ratings : ', allratings.ratings);
-
-			
-
-			// res.status(HttpStatus.CREATED).json({status : HttpStatus.CREATED, msg :"rating submit successfully"});
-			// return;
 		}
 		catch(error)
 		{
@@ -1434,16 +1402,32 @@ router.post('/submitRatingAndReview', async (req, res) => {
 	}
 });
 
-
 /* Rating List API*/
 router.get('/ratingList', async (req, res) => {
-	let data = await ratingSchema.find({});
+	var data = await ratingSchema.find({});
 	if(data!= undefined && data.length>0) {
-	  res.json({success: true, msg : 'rating list', data});
-	  return;
+		res.status(HttpStatus.OK).json({ success: true, msg:"rating list", data});
+		return;
 	}
-	res.json({success: false, msg : 'no rating found.', data});
-	return;
+	else
+	{
+		res.status(HttpStatus.NOT_FOUND).json({success: false, msg:"no rating list found"});
+		return;
+	}
+});
+
+router.get('/averageRating', async (req, res, next) => {
+	let data = await ratingSchema.aggregate([{$group: {_id: null, "average_rating": {$avg: "$rating"}}}]);
+	if(data)
+	{
+		res.status(HttpStatus.OK).json({ success: true, data});
+		return;
+	}
+	else
+	{
+		res.status(HttpStatus.NOT_FOUND).json({success: false, msg:"no average rating found"});
+		return;	
+	}
 });
 
 
