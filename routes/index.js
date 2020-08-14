@@ -9,6 +9,7 @@ var flash = require('req-flash');
 const sgMail = require('@sendgrid/mail');
 const session = require('express-session');
 var csv = require('csv-express');
+const nodemailer = require("nodemailer");
 
 var router = express.Router();
 
@@ -4990,7 +4991,7 @@ router.get("/createemail", async (req, res) => {
 	}
 });
 
-const nodemailer = require("nodemailer");
+
 /* Post Create email Notification */
 router.post("/createemail", async (req, res) => {
 	console.log('-> call post send notification ');
@@ -5016,16 +5017,6 @@ router.post("/createemail", async (req, res) => {
 				let toEmail   = emaillist;
 				let toSubject = req.body.subject;
 				let textmsg   = req.body.message;
-
-				// var smtpTransport = nodemailer.createTransport({
-				// 	service: 'gmail',
-				// 	port: 587,
-				// 	host: "smtp.ethereal.email",
-				// 	auth: {
-				// 		user: 'shailendra.brinfotech@gmail.com',
-				// 		pass: 'brinfotech'
-				// 	}
-				// });
 
 				let testAccount = await nodemailer.createTestAccount();
 
@@ -5060,30 +5051,6 @@ router.post("/createemail", async (req, res) => {
 						res.redirect('/recipnotification');
 					}
 				});
-				
-				// var mailOptions = {
-				// 	from: webEmail,
-				// 	to: toEmail,
-				// 	subject: toSubject,
-				// 	html: textmsg
-				// };
-				// sgMail.sendMultiple(mailOptions);
-
-
-				// ejs.renderFile(process.cwd() + "/views/evoaitemp.ejs", { message: textmsg, temp_image: temp_image }, function (err, data) {
-				// 	if (err) {
-				// 		console.log(err);
-				// 	} else {
-						
-				// 		var mailOptions = {
-				// 			from: webEmail,
-				// 			to: toEmail,
-				// 			subject: toSubject,
-				// 			html: data
-				// 		};
-				// 		sgMail.sendMultiple(mailOptions);
-				// 	}
-				// });
 			}
 			else
 			{
@@ -5188,10 +5155,12 @@ router.post("/searchemail/:id", async (req, res) => {
 	}
 })
 
+
 /* Search email */	
 router.post("/searchstring/:id", async (req, res) => {
-	var emailId = req.session.emailId;
 	var admin_name = req.session.admin_name;
+	var emailId = req.session.emailId;
+	
 	if(admin_name)
 	{
 		var findemail = req.params.id;
