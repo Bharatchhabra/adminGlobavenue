@@ -8,7 +8,7 @@ var express = require('express');
 var flash = require('req-flash');
 const sgMail = require('@sendgrid/mail');
 const session = require('express-session');
-var WAValidator	= require('wallet-address-validator');
+var csv = require('csv-express');
 
 var router = express.Router();
 
@@ -21,29 +21,35 @@ router.use(session({
 
 router.use(flash());
 
-sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-
 var webEmail = process.env.WEBEmail;
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 const clientUrl = process.env.clientUrl;
 
 const Admin = mongoose.model("Admin")
 const Users = mongoose.model("Users")
 const Forgotpass = mongoose.model("Forgotpass")
-// const userGroupModel = mongoose.model("User_group")
-const userGroupModel = mongoose.model("User_group")
-const Emailtemplate = mongoose.model("Emailtemplate")
-const Sendemail_list = mongoose.model("Sendemail_list")
 
 const RoleModel = mongoose.model("Role")
 const PlanModel = mongoose.model("Plan")
-
 const Realestate = mongoose.model("Realestate")
 const SpaceModel = mongoose.model("Space_attribute")
 const purposeModel = mongoose.model("Purpose_attribute")
 const automobileModel = mongoose.model("Automobile")
 const boatsModel = mongoose.model("Boats")
 const globtechModel = mongoose.model("Globtech")
+const aboutModel = mongoose.model("About")
+const PrivacyPolicyModel = mongoose.model("Privacy_policy")
+const termsOfServiceModel = mongoose.model("Terms_of_service")
+const contactusModel = mongoose.model("Contactus")
+const faqModel = mongoose.model("Faq")
+const viewerModel = mongoose.model("Viewer_user")
+const helpModel = mongoose.model("Help")
+const countryModel = mongoose.model("Country")
+const cityModel = mongoose.model("City")
+const abuseModel = mongoose.model("Abuse")
+const Sendemail_list = mongoose.model("Sendemail_list")
+
 
 /* SET STORAGE MULTER*/ 
 var storage = multer.diskStorage({
@@ -1009,10 +1015,72 @@ router.post("/addNewUser", async (req, res) => {
 	}
 });
 
-/* Advertisert functionaliy*/
-router.get("/realestate", async (req, res) => {
+/* Get viewerUsers functionaliy */
+router.get("/viewerusers", async (req, res) => {
+	
+	var admin_name = req.session.admin_name;
+	var emailId = req.session.emailId;
+	if(emailId)
+	{
+		const permission_result = await Admin.findOne({"email": emailId});
+		const adminpermition    = JSON.stringify(permission_result.role);
+		if(adminpermition.includes('Admin') || adminpermition.includes('Vendor'))
+		{
+			const viewer_list = await viewerModel.find().sort({"created_at": -1});
+			console.log('Viewer List', viewer_list);
+			var notification_arr = {
+				'type': req.flash('type'),
+				'text_msg': req.flash('text_msg')
+			}
+			res.render('viewerusers', { title: 'Viewer Users', menuId: 'viewerusers', msg: notification_arr, viewer_list: viewer_list, adminname: admin_name, adminpermition: adminpermition});
+		}
+	}
+	else
+	{
+		var notification_arr = {
+			'type': 'Warning',
+			'text_msg': 'Your are not logged In!'
+		}
+		res.render('login', { title: 'Login', menuId: 'Login', msg: notification_arr, redirecturl: 'viewerusers'});
+	} 
+});
+
+/* Delete Viewer Users functionaliy */
+router.delete('/removeViewerUsers/:postId', async (req, res) => {
 	var emailId = req.session.emailId;
 	var admin_name = req.session.admin_name;
+	if(emailId)
+	{
+		try
+		{
+			const post = await viewerModel.findByIdAndRemove({_id: req.params.postId}, function(err) {
+				if(err){
+					console.log(err);
+					res.status.json({ err: err });
+				}
+				res.json({ success: true });
+			});
+		}
+		catch(e)
+		{
+			res.send(500)
+		}
+	}
+	else
+	{
+		var notification_arr = {
+			'type': 'Warning',
+			'text_msg': 'Your are not logged In!'
+		}
+		res.render('login', { title: 'Login', menuId: 'Login', msg: notification_arr, redirecturl: 'adminaccess'});
+	}
+});
+
+
+/* Get realestate functionaliy */
+router.get("/realestate", async (req, res) => {
+	var admin_name = req.session.admin_name;
+	var emailId = req.session.emailId;
 	if(emailId)
 	{
 		const permission_result = await Admin.findOne({"email": emailId});
@@ -3096,6 +3164,21 @@ router.get('/subscription', async (req, res) => {
 	}
 });
 
+/* Export to csv */
+router.get('/export_to_plan', function(req, res, next) {
+	var filename   = "plan.csv";
+    var dataArray;
+    PlanModel.find().lean().exec({}, function(err, plan) {
+		if (err) res.send(err);
+		console.log('-> PLAN:', plan);
+        
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader("Content-Disposition", 'attachment; filename='+filename);
+        res.csv(plan, true);
+    });
+});
+
 /* addNewPlan */
 router.get('/add_new_plan', async (req, res) => {
 	let admin_name = req.session.admin_name;
@@ -3447,10 +3530,1714 @@ router.post('/addnewrole', async (req, res) => {
 	}
 });
 
+/************************************ Start Web-Site-Pages Module **************************************************/
+/* Get about As Functionaliy */
+
+router.get("/about", async (req, res) => {
+	var admin_name = req.session.admin_name;
+	var emailId = req.session.emailId;
+	if(emailId)
+	{
+		const permission_result = await Admin.findOne({"email": emailId});
+		const adminpermition    = JSON.stringify(permission_result.role);
+		if(adminpermition.includes('Admin') || adminpermition.includes('Vendor'))
+		{
+			const aboutusDetails = await aboutModel.findOne();
+			var notification_arr = {
+				'type': req.flash('type'),
+				'text_msg': req.flash('text_msg')
+			}
+			res.render('aboutAs', {title: 'About As', menuId: 'webpage', msg: notification_arr, aboutusDetails: aboutusDetails, adminname: admin_name, adminpermition: adminpermition});
+		}
+		else
+		{
+			req.flash('type', 'Warning');
+			req.flash('text_msg', 'Permission denied');
+			res.redirect("/dashboard");
+		}
+	}
+	else
+	{
+		var notification_arr = {
+			'type': 'Warning',
+			'text_msg': 'Your are not logged In!'
+		}
+		res.render('login', { title: 'Login', menuId: 'Login', msg: notification_arr, redirecturl: 'about'});
+	}
+});
+
+/* Post about As Functionaliy */
+router.post("/post_aboutas", async (req, res, next) => {
+	var admin_name = req.session.admin_name;
+	var emailId = req.session.emailId;
+	if(emailId)
+	{
+		const permission_result = await Admin.findOne({"email": emailId});
+		const adminpermition    = JSON.stringify(permission_result.role);
+		if(adminpermition.includes('Admin') || adminpermition.includes('Vendor'))
+		{
+			try
+			{	
+				const data = await aboutModel.findOne();
+				console.log('-> data: ', data._id);	
+				await aboutModel.update({ _id : data._id},{
+					$set : {
+						title : req.body.title, 
+						description : req.body.description, 
+					}
+				});
+				req.flash('type', 'Success');
+				req.flash('text_msg', 'Update successful');
+				res.redirect("/about");
+			}
+			catch(error)
+			{
+				const aboutusDetails = await aboutModel.findOne({_id: data._id});
+				var notification_arr = {
+					'type': 'Error',
+					'text_msg': error
+				}
+				res.render('aboutAs', {title: 'About As', menuId: 'webpage', msg: notification_arr, aboutusDetails: aboutusDetails, adminname: admin_name, adminpermition: adminpermition});
+			}
+		}
+		else
+		{
+			req.flash('type', 'Warning');
+			req.flash('text_msg', 'Permission denied');
+			res.redirect("/dashboard");
+		}
+	}
+	else
+	{
+		var notification_arr = {
+			'type': 'Warning',
+			'text_msg': 'Your are not logged In!'
+		}
+		res.render('login', { title: 'Login', menuId: 'Login', msg: notification_arr, redirecturl: 'about'});
+	}
+});
+
+
+/* Get privacyPolicy Functionaliy */
+router.get('/privacyPolicy', async (req, res) => {
+	var admin_name = req.session.admin_name;
+	var emailId = req.session.emailId;
+	if(emailId)
+	{
+		const permission_result = await Admin.findOne({"email": emailId});
+		const adminpermition    = JSON.stringify(permission_result.role);
+		if(adminpermition.includes('Admin') || adminpermition.includes('Vendor'))
+		{
+			const privacypolicy = await PrivacyPolicyModel.findOne();
+			var notification_arr = {
+				'type': req.flash('type'),
+				'text_msg': req.flash('text_msg')
+			}
+			res.render('privacyPolicy', {title: 'privacy policy', menuId: 'webpage', msg: notification_arr, privacypolicy: privacypolicy, adminname: admin_name, adminpermition: adminpermition});
+		}
+		else
+		{
+			req.flash('type', 'Warning');
+			req.flash('text_msg', 'Permission denied');
+			res.redirect("/dashboard");
+		}
+	}
+	else
+	{
+		var notification_arr = {
+			'type': 'Warning',
+			'text_msg': 'Your are not logged In!'
+		}
+		res.render('login', { title: 'Login', menuId: 'Login', msg: notification_arr, redirecturl: 'privacyPolicy'});
+	}
+});
+
+/* Post Privacy Policy Functionaliy */
+router.post("/postPrivacyPolicy", async (req, res, next) => {
+	var admin_name = req.session.admin_name;
+	var emailId = req.session.emailId;
+	if(emailId)
+	{
+		const permission_result = await Admin.findOne({"email": emailId});
+		const adminpermition    = JSON.stringify(permission_result.role);
+		if(adminpermition.includes('Admin') || adminpermition.includes('Vendor'))
+		{
+			try
+			{	
+				const data = await PrivacyPolicyModel.findOne();
+				console.log('-> data: ', data._id);	
+				await PrivacyPolicyModel.update({ _id : data._id},{
+					$set : {
+						title : req.body.title, 
+						description : req.body.description, 
+					}
+				});
+				req.flash('type', 'Success');
+				req.flash('text_msg', 'Update successful');
+				res.redirect("/privacyPolicy");
+			}
+			catch(error)
+			{
+				const PolicyDetails = await PrivacyPolicyModel.findOne({_id: data._id});
+				var notification_arr = {
+					'type': 'Error',
+					'text_msg': error
+				}
+				res.render('privacyPolicy', {title: 'privacy policy', menuId: 'webpage', msg: notification_arr, PolicyDetails: PolicyDetails, adminname: admin_name, adminpermition: adminpermition});
+			}
+		}
+		else
+		{
+			req.flash('type', 'Warning');
+			req.flash('text_msg', 'Permission denied');
+			res.redirect("/dashboard");
+		}
+	}
+	else
+	{
+		var notification_arr = {
+			'type': 'Warning',
+			'text_msg': 'Your are not logged In!'
+		}
+		res.render('login', { title: 'Login', menuId: 'Login', msg: notification_arr, redirecturl: 'privacyPolicy'});
+	}
+});
+
+/* Get Terms Of Service Functionaliy */
+router.get('/termsOfService', async (req, res) => {
+	var admin_name = req.session.admin_name;
+	var emailId = req.session.emailId;
+	if(emailId)
+	{
+		const permission_result = await Admin.findOne({"email": emailId});
+		const adminpermition    = JSON.stringify(permission_result.role);
+		if(adminpermition.includes('Admin') || adminpermition.includes('Vendor'))
+		{
+			const termsAndService = await termsOfServiceModel.findOne();
+			var notification_arr = {
+				'type': req.flash('type'),
+				'text_msg': req.flash('text_msg')
+			}
+			res.render('termsOfService', {title: 'Terms Of Service', menuId: 'webpage', msg: notification_arr, adminname: admin_name, termsAndService: termsAndService, adminpermition: adminpermition});
+		}
+		else
+		{
+			req.flash('type', 'Warning');
+			req.flash('text_msg', 'Permission denied');
+			res.redirect("/dashboard");
+		}
+	}
+	else
+	{
+		var notification_arr = {
+			'type': 'Warning',
+			'text_msg': 'Your are not logged In!'
+		}
+		res.render('login', { title: 'Login', menuId: 'Login', msg: notification_arr, redirecturl: 'termsOfService'});
+	}
+});
+
+/* Post Privacy Policy Functionaliy */
+router.post("/TermsOfService", async (req, res, next) => {
+	var admin_name = req.session.admin_name;
+	var emailId = req.session.emailId;
+	if(emailId)
+	{
+		const permission_result = await Admin.findOne({"email": emailId});
+		const adminpermition    = JSON.stringify(permission_result.role);
+		if(adminpermition.includes('Admin') || adminpermition.includes('Vendor'))
+		{
+			try
+			{	
+				const data = await termsOfServiceModel.findOne();
+				await termsOfServiceModel.update({ _id : data._id},{
+					$set : {
+						title : req.body.title, 
+						description : req.body.description, 
+					}
+				});
+				req.flash('type', 'Success');
+				req.flash('text_msg', 'Update successful');
+				res.redirect("/termsOfService");
+			}
+			catch(error)
+			{
+				const ServiceDetails = await termsOfServiceModel.findOne({_id: data._id});
+				var notification_arr = {
+					'type': 'Error',
+					'text_msg': error
+				}
+				res.render('termsOfService', {title: 'Terms Of Service', menuId: 'webpage', msg: notification_arr, ServiceDetails: ServiceDetails, adminname: admin_name, adminpermition: adminpermition});
+			}
+		}
+		else
+		{
+			req.flash('type', 'Warning');
+			req.flash('text_msg', 'Permission denied');
+			res.redirect("/dashboard");
+		}
+	}
+	else
+	{
+		var notification_arr = {
+			'type': 'Warning',
+			'text_msg': 'Your are not logged In!'
+		}
+		res.render('login', { title: 'Login', menuId: 'Login', msg: notification_arr, redirecturl: 'termsOfService'});
+	}
+});
+
+/* Get contactus Functionaliy */
+router.get('/contactus', async (req, res) => {
+	var admin_name = req.session.admin_name;
+	var emailId = req.session.emailId;
+	if(emailId)
+	{
+		const permission_result = await Admin.findOne({"email": emailId});
+		const adminpermition    = JSON.stringify(permission_result.role);
+		if(adminpermition.includes('Admin') || adminpermition.includes('Vendor'))
+		{
+			const contactusData = await contactusModel.findOne();
+			var notification_arr = {
+				'type': req.flash('type'),
+				'text_msg': req.flash('text_msg')
+			}
+			res.render('contactus', {title: 'contact us', menuId: 'webpage', msg: notification_arr, contactusData: contactusData, adminname: admin_name, adminpermition: adminpermition});
+		}
+		else
+		{
+			req.flash('type', 'Warning');
+			req.flash('text_msg', 'Permission denied');
+			res.redirect("/dashboard");
+		}
+	}
+	else
+	{
+		var notification_arr = {
+			'type': 'Warning',
+			'text_msg': 'Your are not logged In!'
+		}
+		res.render('login', { title: 'Login', menuId: 'Login', msg: notification_arr, redirecturl: 'contactus'});
+	}
+});
+
+/* Post Contact us Functionaliy */
+router.post("/contactus", async (req, res, next) => {
+	var admin_name = req.session.admin_name;
+	var emailId = req.session.emailId;
+	if(emailId)
+	{
+		const permission_result = await Admin.findOne({"email": emailId});
+		const adminpermition    = JSON.stringify(permission_result.role);
+		if(adminpermition.includes('Admin') || adminpermition.includes('Vendor'))
+		{
+			try
+			{	
+				const data = await contactusModel.findOne();
+				await contactusModel.update({ _id : data._id},{
+					$set : {
+						title : req.body.title, 
+						description : req.body.description, 
+					}
+				});
+				req.flash('type', 'Success');
+				req.flash('text_msg', 'Update successful');
+				res.redirect("/contactus");
+			}
+			catch(error)
+			{
+				const contactusDetails = await contactusModel.findOne({_id: data._id});
+				var notification_arr = {
+					'type': 'Error',
+					'text_msg': error
+				}
+				res.render('contactus', {title: 'contact us', menuId: 'webpage', msg: notification_arr, contactusDetails: contactusDetails, adminname: admin_name, adminpermition: adminpermition});
+			}
+		}
+		else
+		{
+			req.flash('type', 'Warning');
+			req.flash('text_msg', 'Permission denied');
+			res.redirect("/dashboard");
+		}
+	}
+	else
+	{
+		var notification_arr = {
+			'type': 'Warning',
+			'text_msg': 'Your are not logged In!'
+		}
+		res.render('login', { title: 'Login', menuId: 'Login', msg: notification_arr, redirecturl: 'contactus'});
+	}
+});
+
+/* Get faq Functionaliy */
+router.get('/FAQ', async (req, res) => {
+	var admin_name = req.session.admin_name;
+	var emailId = req.session.emailId;
+	if(emailId)
+	{
+		const permission_result = await Admin.findOne({"email": emailId});
+		const adminpermition    = JSON.stringify(permission_result.role);
+		if(adminpermition.includes('Admin') || adminpermition.includes('Vendor'))
+		{
+			const faq_list = await faqModel.find();
+			var notification_arr = {
+				'type': req.flash('type'),
+				'text_msg': req.flash('text_msg')
+			}
+			res.render('faq', {title: 'FAQ', menuId: 'webpage', msg: notification_arr, faq_list: faq_list, adminname: admin_name, adminpermition: adminpermition});
+		}
+		else
+		{
+			req.flash('type', 'Warning');
+			req.flash('text_msg', 'Permission denied');
+			res.redirect("/dashboard");
+		}
+	}
+	else
+	{
+		var notification_arr = {
+			'type': 'Warning',
+			'text_msg': 'Your are not logged In!'
+		}
+		res.render('login', { title: 'Login', menuId: 'Login', msg: notification_arr, redirecturl: 'FAQ'});
+	}
+});
+
+/* Get add_new_faq functionaliy */
+router.get('/add_new_faq', async (req, res) => {
+	let admin_name = req.session.admin_name;
+	let emailId = req.session.emailId;
+	if(emailId)
+	{
+		const permission_result = await Admin.findOne({"email": emailId});
+		const adminpermition    = JSON.stringify(permission_result.role);
+		if(adminpermition.includes('Admin') || adminpermition.includes('Vendor'))
+		{
+			var notification_arr = {
+				'type' : req.flash('type'),
+				'text_msg': req.flash('text_msg')
+			}
+			res.render('add_new_faq', {title: 'Add FAQ', menuId: 'webpage', msg: notification_arr, adminname: admin_name, adminpermition:adminpermition });
+		}
+		else
+		{
+			req.flash('type', 'Warning');
+			req.flash('text_msg', 'Permission denied');
+			res.redirect("/dashboard");
+		}
+	}
+	else
+	{
+		var notification_arr = {
+			'type': 'Warning',
+			'text_msg': 'Your are not logged In!'
+		}
+		res.render('login', { title: 'Login', menuId: 'Login', msg: notification_arr, redirecturl: 'FAQ'});
+	}
+});
+
+/* Post add_new_faq Functionaliy */
+router.post("/add_new_faq", async (req, res,) => {
+	let admin_name = req.session.admin_name;
+	let emailId = req.session.emailId;
+	if(emailId)
+	{
+		const permission_result = await Admin.findOne({"email": emailId});
+		const adminpermition    = JSON.stringify(permission_result.role);
+		if(adminpermition.includes('Admin') || adminpermition.includes('Vendor'))
+		{
+			var question = req.body.question 
+			var answer = req.body.answer;
+			if(question != '' && answer != '')
+			{
+				try
+				{
+					const faqData = new faqModel();
+					faqData.question = question;
+					faqData.answer = answer;
+					faqData.created_at = moment().format("ll");
+					faqData.status = true;
+					
+					await faqData.save();
+					console.log('-> save data:', faqData);
+
+					req.flash('type', 'Success');
+					req.flash('text_msg', 'FAQ created successful');
+					res.redirect('/FAQ');
+				}
+				catch(error)
+				{
+					var notification_arr = {
+						'type': 'Error',
+						'text_msg': error
+					}
+					res.render('add_new_faq', {title: 'Add FAQ', menuId: 'webpage', msg: notification_arr, adminname: admin_name, adminpermition:adminpermition });
+				}
+			}
+			else
+			{
+				var notification_arr = {
+					'type': 'Error',
+					'text_msg': 'Fill are all required field*'
+				}
+				res.render('add_new_faq', {title: 'Add FAQ', menuId: 'webpage', msg: notification_arr, adminname: admin_name, adminpermition:adminpermition });
+			}
+		}
+		else
+		{
+			req.flash('type', 'Warning');
+			req.flash('text_msg', 'Permission denied');
+			res.redirect("/dashboard");
+		}
+	}
+	else
+	{
+		var notification_arr = {
+			'type': 'Warning',
+			'text_msg': 'Your are not logged In!'
+		}
+		res.render('login', { title: 'Login', menuId: 'Login', msg: notification_arr, redirecturl: 'FAQ'});
+	}
+});
+
+/* Get update FAQ schema */
+router.get("/edit_faq/:postID", async (req, res) => {
+	var admin_name = req.session.admin_name;
+	var emailId = req.session.emailId;
+	if(emailId) {
+		const permission_result = await Admin.findOne({"email": emailId});
+		const adminpermition    = JSON.stringify(permission_result.role);
+		if(adminpermition.includes('Admin') || adminpermition.includes('Vendor'))
+		{
+			try
+			{
+				const edit_faq = await faqModel.findOne({_id: req.params.postID});
+				var notification_arr = {
+					'type': req.flash('type'),
+					'text_msg': req.flash('text_msg')
+				}
+				res.render('editfaq', { title: 'Edit Faq', menuId: 'webpage', edit_faq: edit_faq, msg: notification_arr, adminname:admin_name, adminpermition: adminpermition });
+			}
+			catch(error)
+			{
+				var notification_arr = {
+					'type': 'Warning',
+					'text_msg': error
+				}
+				res.render('editfaq', { title: 'Edit Faq', menuId: 'webpage', edit_faq: edit_faq, msg: notification_arr, adminname:admin_name, adminpermition: adminpermition });
+			}
+		}
+		else
+		{
+			req.flash('type', 'Warning');
+			req.flash('text_msg', 'Permission denied');
+			res.redirect("/dashboard");
+		}
+	}
+	else
+	{
+		var notification_arr = {
+			'type': 'Warning',
+			'text_msg': 'Your are not logged In!'
+		}
+		res.render('login', { title: 'Login', menuId: 'Login', msg: notification_arr, redirecturl: 'FAQ'});
+	}
+});
+
+/* POST update FAQ schema */
+router.post("/edit_faq/:postID", async (req, res) => {
+	console.log('call POST edit function');
+	var admin_name = req.session.admin_name;
+	var emailId = req.session.emailId;
+	if(emailId)
+	{
+		const permission_result = await Admin.findOne({"email": emailId});
+		const adminpermition    = JSON.stringify(permission_result.role);
+		if(adminpermition.includes('Admin') || adminpermition.includes('Vendor'))
+		{
+			try
+			{			
+				await faqModel.update({ _id : req.params.postID},{
+					$set : {
+						question : req.body.question, 
+						answer : req.body.answer, 
+					}
+				});
+	
+				req.flash('type', 'Success');
+				req.flash('text_msg', 'Update successful');
+				res.redirect("/FAQ");
+			}
+			catch(error)
+			{
+				const edit_faq = await faqModel.findOne({_id: req.params.postID});
+				var notification_arr = {
+					'type': 'Error',
+					'text_msg': error
+				}
+				res.render('editfaq', { title: 'Edit Faq', menuId: 'webpage', edit_faq: edit_faq, msg: notification_arr, adminname:admin_name, adminpermition: adminpermition });
+			}
+		}
+		else
+		{
+			req.flash('type', 'Warning');
+			req.flash('text_msg', 'Permission denied');
+			res.redirect("/dashboard");
+		}
+	}
+	else
+	{
+		var notification_arr = {
+			'type': 'Warning',
+			'text_msg': 'Your are not logged In!'
+		}
+		res.render('login', { title: 'Login', menuId: 'Login', msg: notification_arr, redirecturl: 'FAQ'});
+	}
+});
+
+
+/* Delete Schema responce */
+router.delete('/removefaq/:postId', async (req, res) => {
+	var admin_name = req.session.admin_name;
+	var emailId = req.session.emailId;
+	if(emailId)
+	{
+		try{
+			const post = await faqModel.findByIdAndRemove({_id: req.params.postId},function(err){
+				if(err){
+					console.log(err);
+					res.status.json({ err: err });
+				}
+				res.json({ success: true });
+			});
+		}
+		catch(e)
+		{
+			res.send(500)
+		}
+	}
+	else
+	{
+		var notification_arr = {
+			'type': 'Warning',
+			'text_msg': 'Your are not logged In!'
+		}
+		res.render('login', { title: 'Login', menuId: 'Login', msg: notification_arr, redirecturl: 'FAQ'});
+	}
+});
+
+/******************************** End Of Website-Pages Module ****************************************************/
+
+
+/********************************** Review And Ratings Module *************************************************/
+/* Get Review And Ratings Functionaliy */
+
+router.get('/reviewandratings', async (req, res) => {
+	var admin_name = req.session.admin_name;
+	var emailId = req.session.emailId;
+	if(emailId)
+	{
+		const permission_result = await Admin.findOne({"email": emailId});
+		const adminpermition    = JSON.stringify(permission_result.role);
+		if(adminpermition.includes('Admin') || adminpermition.includes('Vendor'))
+		{
+			var notification_arr = {
+				'type': req.flash('type'),
+				'text_msg': req.flash('text_msg')
+			}
+			res.render('ratings', {title: 'Review & Ratings', menuId: 'ratings', msg: notification_arr, adminname: admin_name, adminpermition: adminpermition});
+		}
+		else
+		{
+			req.flash('type', 'Warning');
+			req.flash('text_msg', 'Permission denied');
+			res.redirect("/dashboard");
+		}
+	}
+	else
+	{
+		var notification_arr = {
+			'type': 'Warning',
+			'text_msg': 'Your are not logged In!'
+		}
+		res.render('login', { title: 'Login', menuId: 'Login', msg: notification_arr, redirecturl: 'reviewandratings'});
+	}
+});
+
+/********************************** Start Help Module *********************************************************/
+/* Get Help Functionaliy */
+router.get('/help', async (req, res) => {
+	let emailId = req.session.emailId;
+	let admin_name = req.session.admin_name;
+	if(emailId)
+	{
+		const permission_result = await Admin.findOne({"email": emailId});
+		const adminpermition    = JSON.stringify(permission_result.role);
+		if(adminpermition.includes('Admin') || adminpermition.includes('Vendor'))
+		{
+			const query_list = await helpModel.find().sort({"created_at":1});
+
+			var notification_arr = {
+				'type': req.flash('type'),
+				'text_msg': req.flash('text_msg')
+			}
+			res.render('help', {title: 'Help', menuId: 'help', msg: notification_arr, query_list: query_list, adminname: admin_name, adminpermition:adminpermition});
+		}
+		else
+		{
+			req.flash('type', 'Warning');
+			req.flash('text_msg', 'Permission denied');
+			res.redirect("/dashboard");
+		}
+	}
+	else
+	{
+		var notification_arr = {
+			'type': 'Warning',
+			'text_msg': 'Your are not logged In!'
+		}
+		res.render('login', { title: 'Login', menuId: 'Login', msg: notification_arr, redirecturl: 'help'});
+	}
+});
+
+/* Delete Help Schema responce */
+router.delete('/removeHelp/:postId', async (req, res) => {
+	console.log('call remove function');
+	var admin_name = req.session.admin_name;
+	var emailId = req.session.emailId;
+	if(emailId)
+	{
+		try
+		{
+			const post = await helpModel.findByIdAndRemove({_id: req.params.postId},function(err){
+				if(err)
+				{
+					console.log(err);
+					res.status.json({ err: err });
+				}
+				res.json({ success: true });
+			});
+		}
+		catch(e)
+		{
+			res.send(500)
+		}
+	}
+	else
+	{
+		var notification_arr = {
+			'type': 'Warning',
+			'text_msg': 'Your are not logged In!'
+		}
+		res.render('login', { title: 'Login', menuId: 'Login', msg: notification_arr, redirecturl: 'help'});
+	}
+});
+/**********************************End Of Help Module *********************************************************/
+
+/********************************** Location Module *********************************************************/
+/* Get Location&country Functionaliy */
+router.get('/country', async (req, res) => {
+	console.log('-> get_addLocation: 1');
+	let admin_name = req.session.admin_name;
+	let emailId = req.session.emailId;
+	if(emailId)
+	{
+		const permission_result = await Admin.findOne({"email": emailId});
+		const adminpermition    = JSON.stringify(permission_result.role);
+		if(adminpermition.includes('Admin') || adminpermition.includes('Vendor'))
+		{
+			const country_result = await countryModel.find({}).sort({"country": 1});
+			var notification_arr = {
+				'type' : req.flash('type'),
+				'text_msg': req.flash('text_msg')
+			}
+			res.render('country', {title: 'Country', menuId: 'location', msg: notification_arr, adminname: admin_name,  adminpermition: adminpermition, country_result: country_result});
+		}
+		else
+		{
+			req.flash('type', 'Warning');
+			req.flash('text_msg', 'Permission denied');
+			res.redirect("/dashboard");
+		}
+	}
+	else
+	{
+		var notification_arr = {
+			'type': 'Warning',
+			'text_msg': 'Your are not logged In!'
+		}
+		res.render('login', { title: 'Login', menuId: 'Login', msg: notification_arr, redirecturl: 'country'});
+	}
+});
+
+/* get add_location */
+router.get('/addLocation', async (req, res) => {
+	console.log('-> get_addLocation: 2');
+	let admin_name = req.session.admin_name;
+	let emailId = req.session.emailId;
+	if(emailId)
+	{
+		const permission_result = await Admin.findOne({"email": emailId});
+		const adminpermition    = JSON.stringify(permission_result.role);
+		if(adminpermition.includes('Admin') || adminpermition.includes('Vendor'))
+		{
+			var notification_arr = {
+				'type' : req.flash('type'),
+				'text_msg': req.flash('text_msg')
+			}
+			res.render('country', {title: 'Country', menuId: 'location', msg: notification_arr, adminname: admin_name,  adminpermition: adminpermition});
+		}
+		else
+		{
+			req.flash('type', 'Warning');
+			req.flash('text_msg', 'Permission denied');
+			res.redirect("/dashboard");
+		}
+	}
+	else
+	{
+		var notification_arr = {
+			'type': 'Warning',
+			'text_msg': 'Your are not logged In!'
+		}
+		res.render('login', { title: 'Login', menuId: 'Login', msg: notification_arr, redirecturl: 'country'});
+	}
+});
+
+/* Post add_location  */
+router.post('/addLocation', async (req, res) => {
+	console.log('-> post_addLocation: 3');
+	let admin_name = req.session.admin_name;
+	let emailId = req.session.emailId;
+	if (emailId)
+	{
+		const permission_result = await Admin.findOne({"email": emailId});
+		const adminpermition    = JSON.stringify(permission_result.role);
+		if(adminpermition.includes('Admin') || adminpermition.includes('Vendor'))
+		{
+			try {
+				var country = req.body.country;
+				if(country != '') {
+					let countryDetails = new countryModel({
+						country : req.body.country,
+						created_at : moment().format("ll"),
+						updated_at : new Date().getTime(),
+						status : true
+			  		});
+					await countryDetails.save();
+
+					req.flash('type', 'Success');
+					req.flash('text_msg', 'Country Create Successful');
+					res.redirect('/country');
+				}
+				else
+				{
+					var notification_arr = {
+						'type': 'Error',
+						'text_msg': 'Country field is required'
+					}
+					res.render('country', {title: 'Country', menuId: 'location', msg: notification_arr, adminname: admin_name,  adminpermition: adminpermition});
+				}
+			}
+			catch(error) {
+				var notification_arr = {
+					'type': 'Error',
+					'text_msg': 'country already exists'
+				}
+				res.render('login', { title: 'Login', menuId: 'Login', msg: notification_arr, redirecturl: 'country'});
+			}
+		}
+		else
+		{
+			req.flash('type', 'Warning');
+			req.flash('text_msg', 'Permission denied');
+			res.redirect("/dashboard");
+		}
+	}
+	else
+	{
+		var notification_arr = {
+			'type': 'Warning',
+			'text_msg': 'Your are not logged In!'
+		}
+		res.render('login', { title: 'Login', menuId: 'Login', msg: notification_arr, redirecturl: 'country'});
+	}
+});
+
+/* edit_country */
+router.get("/editCountry/:postID", async (req, res) => {
+	var admin_name = req.session.admin_name;
+	var emailId = req.session.emailId;
+	if(emailId)
+	{
+		const permission_result = await Admin.findOne({"email": emailId});
+		const adminpermition    = JSON.stringify(permission_result.role);
+		if(adminpermition.includes('Admin') || adminpermition.includes('Vendor'))
+		{
+			const edit_country = await countryModel.findOne({_id: req.params.postID});
+			try {
+				var notification_arr = {
+					'type': req.flash('type'),
+					'text_msg': req.flash('text_msg')
+				}
+				res.render('editCountry', { title: 'Edit Country', menuId: 'location', msg: notification_arr, adminname: admin_name, edit_country: edit_country, adminpermition: adminpermition });
+			}
+			catch(error)
+			{
+				var notification_arr = {
+					'type': 'Warning',
+					'text_msg': error
+				}
+				res.render('editCountry', { title: 'Edit Country', menuId: 'location', msg: notification_arr, adminname: admin_name, edit_country: edit_country, adminpermition: adminpermition });
+			}
+		}
+	}
+	else
+	{
+		var notification_arr = {
+			'type': 'Warning',
+			'text_msg': 'Your are not logged In!'
+		}
+		res.render('login', { title: 'Login', menuId: 'Login', msg: notification_arr, redirecturl: 'country'});
+	}
+});
+
+/* post edit_country schema*/
+router.post("/editCountry/:postID", async (req, res) => {
+	var admin_name = req.session.admin_name;
+	var emailId = req.session.emailId;
+	if(emailId)
+	{
+		const permission_result = await Admin.findOne({"email": emailId});
+		const adminpermition    = JSON.stringify(permission_result.role);
+		if(adminpermition.includes('Admin') || adminpermition.includes('Vendor'))
+		{
+			const edit_country = await countryModel.findOne({_id: req.params.postID});
+			try {
+				var countrys = req.body.country;
+				const post = await countryModel.update({_id : req.params.postID},
+					{$set : {country : countrys}
+				});
+				req.flash('type', 'Success');
+				req.flash('text_msg', 'Country details update successful');
+				res.redirect('/country');
+			}
+			catch(error)
+			{
+				var notification_arr = {
+					'type': 'Error',
+					'text_msg': error
+				}
+				res.render('editCountry',{
+					title: 'Edit Country',
+					menuId: 'location',
+					msg: notification_arr,
+					adminname: admin_name,
+					edit_country: edit_country,
+					adminpermition: adminpermition
+				});
+			}
+		}
+		else
+		{
+			req.flash('type', 'Warning');
+			req.flash('text_msg', 'Permission denied');
+			res.redirect("/dashboard");
+		}
+	}
+	else
+	{
+		var notification_arr = {
+			'type': 'Warning',
+			'text_msg': 'Your are not logged In!'
+		}
+		res.render('login', { title: 'Login', menuId: 'Login', msg: notification_arr, redirecturl: 'country'});	
+	}
+});
+
+/* Delete Schema responce */
+router.delete('/removeCountry/:postId', async (req, res) => {
+	var admin_name = req.session.admin_name;
+	var emailId = req.session.emailId;
+	if(emailId)
+	{
+		const permission_result = await Admin.findOne({"email": emailId});
+		const adminpermition    = JSON.stringify(permission_result.role);
+		if(adminpermition.includes('Admin') || adminpermition.includes('Vendor'))
+		{
+			try {
+				const post = await countryModel.findByIdAndRemove({_id: req.params.postId}, function(err) {
+					if(err){
+						console.log(err);
+						res.status.json({ err: err });
+					}
+					res.json({ success: true });
+				});
+			}
+			catch(e)
+			{
+				res.send(500)
+			}
+		}
+		else
+		{
+			req.flash('type', 'Warning');
+			req.flash('text_msg', 'Permission denied');
+			res.redirect("/dashboard");
+		}
+	}
+	else
+	{
+		var notification_arr = {
+			'type': 'Warning',
+			'text_msg': 'Your are not logged In!'
+		}
+		res.render('login', { title: 'Login', menuId: 'Login', msg: notification_arr, redirecturl: 'country'});
+	}
+});
+
+/* Get Location&city Functionaliy */
+router.get('/city', async (req, res) => {
+	console.log('-> get city: 1');
+	let admin_name = req.session.admin_name;
+	let emailId = req.session.emailId;
+	if(emailId)
+	{
+		const permission_result = await Admin.findOne({"email": emailId});
+		const adminpermition    = JSON.stringify(permission_result.role);
+		if(adminpermition.includes('Admin') || adminpermition.includes('Vendor'))
+		{
+			const countrys = await countryModel.find();
+			const city_result = await cityModel.find();
+			
+			var notification_arr = {
+				'type' : req.flash('type'),
+				'text_msg': req.flash('text_msg')
+			}
+			res.render('city', {title: 'City', menuId: 'location', msg: notification_arr, adminname: admin_name,  adminpermition: adminpermition, city_result: city_result, countrys: countrys});
+		}
+		else
+		{
+			req.flash('type', 'Warning');
+			req.flash('text_msg', 'Permission denied');
+			res.redirect("/dashboard");
+		}
+	}
+	else
+	{
+		var notification_arr = {
+			'type': 'Warning',
+			'text_msg': 'Your are not logged In!'
+		}
+		res.render('login', { title: 'Login', menuId: 'Login', msg: notification_arr, redirecturl: 'city'});
+	}
+});
+
+/* Get add_new_city functionaliy */
+router.get('/addCity', async (req, res) => {
+	let admin_name = req.session.admin_name;
+	let emailId = req.session.emailId;
+	if(emailId)
+	{
+		const permission_result = await Admin.findOne({"email": emailId});
+		const adminpermition    = JSON.stringify(permission_result.role);
+		
+		if(adminpermition.includes('Admin') || adminpermition.includes('Vendor'))
+		{
+			const countrys = await countryModel.find();
+			var notification_arr = {
+				'type' : req.flash('type'),
+				'text_msg': req.flash('text_msg')
+			}
+			res.render('addCity', {
+				title: 'Add City',
+				menuId: 'location',
+				msg: notification_arr,
+				countrys: countrys,
+				adminname: admin_name,
+				adminpermition: adminpermition
+			});
+		}
+		else
+		{
+			req.flash('type', 'Warning');
+			req.flash('text_msg', 'Permission denied');
+			res.redirect("/dashboard");
+		}
+	}
+	else
+	{
+		var notification_arr = {
+			'type': 'Warning',
+			'text_msg': 'Your are not logged In!'
+		}
+		res.render('login', {
+			title: 'Login',
+			menuId: 'Login',
+			msg: notification_arr,
+			redirecturl: 'city'
+		});
+	}
+});
+
+/* Post add_location&City  */
+router.post("/addCity", async (req, res, next) => {
+	let admin_name = req.session.admin_name;
+	let emailId = req.session.emailId;
+	if(emailId)
+	{
+		const permission_result = await Admin.findOne({"email": emailId});
+		const adminpermition    = JSON.stringify(permission_result.role);
+		
+		if(adminpermition.includes('Admin') || adminpermition.includes('Vendor'))
+		{
+			try
+			{
+				var country = req.body.country;
+				var city = req.body.city;
+				if(country != '', city != '') {
+					let cityDetails = new cityModel({
+						city : req.body.city,
+						country : req.body.country,
+						created_at : moment().format("ll"),
+						updated_at : new Date().getTime(),
+						status : true
+			  		});
+					await cityDetails.save();
+
+					req.flash('type', 'Success');
+					req.flash('text_msg', 'City Create Successful');
+					res.redirect('/city');
+				}
+				else
+				{
+					var notification_arr = {
+						'type': 'Error',
+						'text_msg': 'Country field is required'
+					}
+					res.render('addCity', {
+						title: 'Add City',
+						menuId: 'location',
+						msg: notification_arr,
+						adminname: admin_name,
+						adminpermition: adminpermition
+					});
+				}
+			}
+			catch(error) {
+				var notification_arr = {
+					'type': 'Error',
+					'text_msg': 'city already exists'
+				}
+				res.render('login', {
+					title: 'Login',
+					menuId: 'Login',
+					msg: notification_arr,
+					redirecturl: 'city'
+				});
+			}
+		}
+		else
+		{
+			req.flash('type', 'Warning');
+			req.flash('text_msg', 'Permission denied');
+			res.redirect("/dashboard");
+		}
+	}
+	else
+	{
+		var notification_arr = {
+			'type': 'Warning',
+			'text_msg': 'Your are not logged In!'
+		}
+		res.render('login', {
+			title: 'Login',
+			menuId: 'Login',
+			msg: notification_arr,
+			redirecturl: city
+		});
+	}
+});
+
+/* Get edit_city schema  */
+router.get("/editCity/:postID", async (req, res) => {
+	var admin_name = req.session.admin_name;
+	var emailId = req.session.emailId;
+	if(emailId)
+	{
+		const permission_result = await Admin.findOne({"email": emailId});
+		const adminpermition    = JSON.stringify(permission_result.role);
+		if(adminpermition.includes('Admin') || adminpermition.includes('Vendor'))
+		{
+			try
+			{
+				const edit_city = await cityModel.findOne({_id: req.params.postID});
+				
+				var notification_arr = {
+					'type': req.flash('type'),
+					'text_msg': req.flash('text_msg')
+				}
+				res.render('editCity', {
+					title: 'Edit City',
+					menuId: 'location',
+					msg: notification_arr,
+					adminname: admin_name,
+					edit_city: edit_city,
+					adminpermition: adminpermition
+				});
+			}
+			catch(error)
+			{
+				var notification_arr = {
+					'type': 'Warning',
+					'text_msg': error
+				}
+				res.render('editCity', {
+					title: 'Edit City',
+					menuId: 'location',
+					msg: notification_arr,
+					adminname: admin_name,
+					edit_city: edit_city,
+					adminpermition: adminpermition
+				});
+			}
+		}
+		else
+		{
+			req.flash('type', 'Warning');
+			req.flash('text_msg', 'Permission denied');
+			res.redirect("/dashboard");
+		}
+	}
+	else
+	{
+		var notification_arr = {
+			'type': 'Warning',
+			'text_msg': 'Your are not logged In!'
+		}
+		res.render('login', {
+			title: 'Login',
+			menuId: 'Login',
+			msg: notification_arr,
+			redirecturl: city
+		});
+	}
+});
+
+/* post edit_country schema*/
+router.post("/editCity/:postID", async (req, res) => {
+	var admin_name = req.session.admin_name;
+	var emailId = req.session.emailId;
+	if(emailId)
+	{
+		const permission_result = await Admin.findOne({"email": emailId});
+		const adminpermition    = JSON.stringify(permission_result.role);
+
+		if(adminpermition.includes('Admin') || adminpermition.includes('Vendor'))
+		{
+			try
+			{
+				var countrys = req.body.country;
+				var city = req.body.city;
+				const post = await cityModel.update({_id : req.params.postID},
+					{$set : { country: countrys, city: city }
+				});
+
+				req.flash('type', 'Success');
+				req.flash('text_msg', 'details update successful');
+				res.redirect('/city');
+
+			}
+			catch(error)
+			{
+				var notification_arr = {
+					'type': 'Error',
+					'text_msg': error
+				}
+				res.render('editCity', {
+					title: 'Edit City',
+					menuId: 'location',
+					msg: notification_arr,
+					adminname: admin_name,
+					edit_city: edit_city,
+					adminpermition: adminpermition
+				});
+			}
+
+		}
+		else
+		{
+			req.flash('type', 'Warning');
+			req.flash('text_msg', 'Permission denied');
+			res.redirect("/dashboard");
+		}
+	}
+	else
+	{
+		var notification_arr = {
+			'type': 'Warning',
+			'text_msg': 'Your are not logged In!'
+		}
+		res.render('login', {
+			title: 'Login',
+			menuId: 'Login',
+			msg: notification_arr,
+			redirecturl: city
+		});
+	}
+});
+
+/* Delete Schema responce */
+router.delete('/removeCity/:postId', async (req, res) => {
+	var admin_name = req.session.admin_name;
+	var emailId = req.session.emailId;
+	if(emailId)
+	{
+		const permission_result = await Admin.findOne({"email": emailId});
+		const adminpermition    = JSON.stringify(permission_result.role);
+
+		if(adminpermition.includes('Admin') || adminpermition.includes('Vendor'))
+		{
+			try {
+				const post = await cityModel.findByIdAndRemove({_id: req.params.postId}, function(err) {
+					if(err){
+						console.log(err);
+						res.status.json({ err: err });
+					}
+					res.json({ success: true });
+				});
+			}
+			catch(e)
+			{
+				res.send(500)
+			}
+		}
+		else
+		{
+			req.flash('type', 'Warning');
+			req.flash('text_msg', 'Permission denied');
+			res.redirect("/dashboard");
+		}
+	}
+	else
+	{
+		var notification_arr = {
+			'type': 'Warning',
+			'text_msg': 'Your are not logged In!'
+		}
+		res.render('login', { title: 'Login', menuId: 'Login', msg: notification_arr, redirecturl: 'city'});
+	}
+});
+/****************************** End Of Location Module **********************************************/
+
+
+/********************************** Start Abuse Module **************************************************/
+/* Get Abuse Management Functionaliy */
+router.get('/abuse', async (req, res, next) => {
+	var admin_name = req.session.admin_name;
+	var emailId = req.session.emailId;
+	if(emailId)
+	{
+		const permission_result = await Admin.findOne({"email": emailId});
+		const adminpermition    = JSON.stringify(permission_result.role);
+		if(adminpermition.includes('Admin') || adminpermition.includes('Vendor'))
+		{
+			const abuse_result = await abuseModel.find().sort({"created_at":1});
+			
+			var notification_arr = {
+				'type' : req.flash('type'),
+				'text_msg': req.flash('text_msg')
+			}
+			res.render('abuse', {title: 'Abuse Management', menuId: 'abuse', msg: notification_arr, abuse_result: abuse_result, adminname: admin_name,  adminpermition: adminpermition});
+		}
+		else
+		{
+			req.flash('type', 'Warning');
+			req.flash('text_msg', 'Permission denied');
+			res.redirect("/dashboard");
+		}
+	}
+	else
+	{
+		var notification_arr = {
+			'type': 'Warning',
+			'text_msg': 'Your are not logged In!'
+		}
+		res.render('login', { title: 'Login', menuId: 'Login', msg: notification_arr, redirecturl: 'abuse'});
+	}
+});
+
+
+/* Delete Schema responce */
+router.delete('/removeAbuse/:postId', async (req, res) => {
+	var admin_name = req.session.admin_name;
+	var emailId = req.session.emailId;
+	if(emailId)
+	{
+		const permission_result = await Admin.findOne({"email": emailId});
+		const adminpermition    = JSON.stringify(permission_result.role);
+
+		if(adminpermition.includes('Admin') || adminpermition.includes('Vendor'))
+		{
+			try {
+				const post = await abuseModel.findByIdAndRemove({_id: req.params.postId}, function(err) {
+					if(err){
+						console.log(err);
+						res.status.json({ err: err });
+					}
+					res.json({ success: true });
+				});
+			}
+			catch(e)
+			{
+				res.send(500)
+			}
+		}
+		else
+		{
+			req.flash('type', 'Warning');
+			req.flash('text_msg', 'Permission denied');
+			res.redirect("/dashboard");
+		}
+	}
+	else
+	{
+		var notification_arr = {
+			'type': 'Warning',
+			'text_msg': 'Your are not logged In!'
+		}
+		res.render('login', { title: 'Login', menuId: 'Login', msg: notification_arr, redirecturl: 'abuse'});
+	}
+});
+
+/****************************** End Of Abuse Module ****************************************************/
+
+
+/********************************** Start notification Module **************************************************/
+/* recip_notification lists */
+router.get("/recipnotification", async (req, res) => {
+	var admin_name = req.session.admin_name;
+	var emailId = req.session.emailId;
+	if(emailId)
+	{
+		const permission_result = await Admin.findOne({"email": emailId});
+		const adminpermition    = JSON.stringify(permission_result.role);
+
+		if(adminpermition.includes('Admin') || adminpermition.includes('Vendor'))
+		{			
+			const recipient_lists = await Sendemail_list.find({});
+
+			var notification_arr = {
+					'type': req.flash('type'),
+					'text_msg': req.flash('text_msg')
+				}
+			res.render('recipnotification', { title: 'Recipient Lists', menuId: 'notification', msg: notification_arr, recipient_lists: recipient_lists, adminname: admin_name, adminpermition: adminpermition });
+		}
+		else
+		{
+			req.flash('type', 'Warning');
+			req.flash('text_msg', 'Permission denied');
+			res.redirect("/dashboard");
+		}
+	}
+	else
+	{
+		var notification_arr = {
+			'type': 'Warning',
+			'text_msg': 'Your are not logged In!'
+		}
+		res.render('login', { title: 'Login', menuId: 'Login', msg: notification_arr, redirecturl: 'recipnotification'});
+	}
+})
+
+/* Get Create email Notification */
+router.get("/createemail", async (req, res) => {
+	console.log('-> createemail');
+	var admin_name = req.session.admin_name;
+	var emailId = req.session.emailId;
+	if(emailId)
+	{
+		const permission_result = await Admin.findOne({"email": emailId});
+		const adminpermition    = JSON.stringify(permission_result.role);
+
+		if(adminpermition.includes('Admin') || adminpermition.includes('Vendor'))
+		{
+			// const template_result = await Emailtemplate.find({});
+			const useremail_arr = await Users.find({}).sort({"email" : 1});
+
+			var notification_arr = {
+				'type': req.flash('type'),
+				'text_msg': req.flash('text_msg')
+			}
+			res.render('createemail', { title: 'Recipient Lists', menuId: 'notification', msg: notification_arr, useremail_arr: useremail_arr, adminname: admin_name, adminpermition: adminpermition });
+		}
+		else
+		{
+			req.flash('type', 'Warning');
+			req.flash('text_msg', 'Permission denied');
+			res.redirect("/dashboard");
+		}
+	}
+	else
+	{
+		var notification_arr = {
+			'type': 'Warning',
+			'text_msg': 'Your are not logged In!'
+		}
+		res.render('login', { title: 'Login', menuId: 'Login', msg: notification_arr, redirecturl: 'recipnotification'});
+	}
+});
+
+const nodemailer = require("nodemailer");
+/* Post Create email Notification */
+router.post("/createemail", async (req, res) => {
+	console.log('-> call post send notification ');
+	var admin_name = req.session.admin_name;
+	var emailId = req.session.emailId;
+	if(emailId) {
+		try
+		{
+			var emaillist = req.body.email;
+			if(emaillist)
+			{
+				console.log('-> Inside if');
+				const post = new Sendemail_list();
+				post.user_id = emaillist;
+				post.ip_address = ip.address();
+				post.subject = req.body.subject;
+				post.message = req.body.message;
+				post.admin_id = req.session.admin_id;
+				post.created_at = moment().format("ll"); 
+
+				await post.save();
+
+				let toEmail   = emaillist;
+				let toSubject = req.body.subject;
+				let textmsg   = req.body.message;
+
+				// var smtpTransport = nodemailer.createTransport({
+				// 	service: 'gmail',
+				// 	port: 587,
+				// 	host: "smtp.ethereal.email",
+				// 	auth: {
+				// 		user: 'shailendra.brinfotech@gmail.com',
+				// 		pass: 'brinfotech'
+				// 	}
+				// });
+
+				let testAccount = await nodemailer.createTestAccount();
+
+				// create reusable transporter object using the default SMTP transport
+				let smtpTransport = nodemailer.createTransport({
+					host: "smtp.ethereal.email",
+					port: 587,
+					secure: false,
+					auth: {
+						user: 'laisha46@ethereal.email',
+        				pass: 'RFUM82mdzS7MUn8JXy'
+					},
+				});
+				var mailOptions = {
+					from: "Globavenue Notification <info@brinfotech.net>",
+					to: toEmail,
+					subject: toSubject,
+					html:textmsg
+				}
+				smtpTransport.sendMail(mailOptions, (error, info) => {
+					if (error) {
+						console.log('error', error);
+						req.flash('type', 'Warning');
+						req.flash('text_msg', ' Username and Password not accepted');
+						res.redirect('/recipnotification');
+					}
+					else
+					{
+						console.log('Message sent: %s', info.messageId);
+						req.flash('type', 'Success');
+						req.flash('text_msg', 'Notification send successful');
+						res.redirect('/recipnotification');
+					}
+				});
+				
+				// var mailOptions = {
+				// 	from: webEmail,
+				// 	to: toEmail,
+				// 	subject: toSubject,
+				// 	html: textmsg
+				// };
+				// sgMail.sendMultiple(mailOptions);
+
+
+				// ejs.renderFile(process.cwd() + "/views/evoaitemp.ejs", { message: textmsg, temp_image: temp_image }, function (err, data) {
+				// 	if (err) {
+				// 		console.log(err);
+				// 	} else {
+						
+				// 		var mailOptions = {
+				// 			from: webEmail,
+				// 			to: toEmail,
+				// 			subject: toSubject,
+				// 			html: data
+				// 		};
+				// 		sgMail.sendMultiple(mailOptions);
+				// 	}
+				// });
+			}
+			else
+			{
+				req.flash('type', 'Warning');
+				req.flash('text_msg', ' Username and Password not accepted');
+				res.redirect('/recipnotification');
+				
+			}
+		}
+		catch(error)
+		{
+			var notification_arr = {
+				'type': 'Error',
+				'text_msg': error
+			}
+			res.render('login', { title: 'Login', menuId: 'Login', msg: notification_arr, redirecturl: 'recipnotification'});
+		}	
+	}
+	else
+	{
+		var notification_arr = {
+			'type': 'Warning',
+			'text_msg': 'Your are not logged In!'
+		}
+		res.render('login', { title: 'Login', menuId: 'Login', msg: notification_arr, redirecturl: 'recipnotification'});
+	}
+});
+
+
+router.delete('/removenotification/:postId', async (req, res) => {
+	var admin_name = req.session.admin_name;
+	var emailId = req.session.emailId;	
+	if(emailId)
+	{
+		try{
+			const post = await Sendemail_list.findByIdAndRemove({
+				_id: req.params.postId
+			},function(err){
+				if(err){
+					console.log(err);
+					res.status.json({ err: err });
+				}
+				res.json({ success: true });
+			});
+		}
+		catch(e)
+		{
+			res.send(500)
+		}
+	}
+	else
+	{
+		var notification_arr = {
+			'type': 'Warning',
+			'text_msg': 'Your are not logged In!'
+		}
+		res.render('login', { title: 'Login', menuId: 'Login', msg: notification_arr, redirecturl: 'recipnotification'});
+	}
+})
+
+/* Search email */	
+router.post("/searchemail/:id", async (req, res) => {
+	var admin_name = req.session.admin_name;
+	var emailId = req.session.emailId;
+	if(admin_name)
+	{
+		var findemail = req.params.id;
+		var resp = '';
+		if(findemail == '')
+		{
+			const useremail_arr = await Users.find({}).sort({"email" : 1});
+			if(result_arr.length > 0)
+			{
+				resp +='<option value="">--- Select email ---</option>';
+				for(var i=0; i < result_arr.length; i++)
+				{
+					resp += '<option value="'+result_arr[i].email+'">'+result_arr[i].email+'</option>';
+				}
+			}
+		}
+		else
+		{
+			var result_arr = await Users.find({ 'email': new RegExp(findemail, 'i') }).sort({"email" : 1});
+			if(result_arr.length > 0)
+			{
+				resp +='<option value="">--- Select email ---</option>';
+				for(var i=0; i < result_arr.length; i++)
+				{
+					resp += '<option value="'+result_arr[i].email+'">'+result_arr[i].email+'</option>';
+				}
+			}			
+		}
+		res.json(resp);		
+	}
+	else
+	{
+		var notification_arr = {
+			'type': 'Warning',
+			'text_msg': 'Your are not logged In!'
+		}
+		res.render('login', { title: 'Login', menuId: 'Login', msg: notification_arr, redirecturl: 'createemail'});
+	}
+})
+
+/* Search email */	
+router.post("/searchstring/:id", async (req, res) => {
+	var emailId = req.session.emailId;
+	var admin_name = req.session.admin_name;
+	if(admin_name)
+	{
+		var findemail = req.params.id;
+		var resp = '';
+		if(findemail == '')
+		{
+			const useremail_arr = await Users.find({}).sort({"email" : 1});
+			if(result_arr.length > 0)
+			{
+				resp +='<option value="">--- Select email ---</option>';
+				for(var i=0; i < result_arr.length; i++)
+				{
+					resp += '<option value="'+result_arr[i].email+'">'+result_arr[i].email+'</option>';
+				}
+			}
+		}
+		else
+		{
+			var result_arr = await Users.find({'email': { '$regex': '(\s+'+findemail+'|^'+findemail+')', '$options': 'i' }}, {}).sort({"email" : 1});
+			if(result_arr.length > 0)
+			{
+				resp +='<option value="">--- Select email ---</option>';
+				for(var i=0; i < result_arr.length; i++)
+				{
+					resp += '<option value="'+result_arr[i].email+'">'+result_arr[i].email+'</option>';
+				}
+			}			
+		}
+		res.json(resp);		
+	}
+	else
+	{
+		var notification_arr = {
+			'type': 'Warning',
+			'text_msg': 'Your are not logged In!'
+		}
+		res.render('login', { title: 'Login', menuId: 'Login', msg: notification_arr, redirecturl: 'recipientlists'});
+	}
+})
+
+/****************************** End Of Setting Module ****************************************************/
+
+
 
 /* Logout */
 router.get("/logout", async (req,res) => {
-	
 	req.session.destroy()
 	req.flash('type', 'Success');
 	req.flash('text_msg', 'Logged out!');

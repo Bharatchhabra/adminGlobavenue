@@ -10,10 +10,6 @@ const Sendemail_listSchema = new Schema({
 		type: [String],
 		required: false
 	},
-	user_group: {
-		type: String,
-		required: false
-	},
 	admin_id: {
 		type: String,
 		required: false
@@ -27,9 +23,13 @@ const Sendemail_listSchema = new Schema({
 		required: false
 	},
 	message: {
-		type: [String],
+		type: String,
 		required: false
 	},
+	// message: {
+	// 	type: [String],
+	// 	required: false
+	// },
     created_at: {
         type: String
     }

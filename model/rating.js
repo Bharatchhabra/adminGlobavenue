@@ -10,23 +10,31 @@ const ratingSchema = new Schema({
         type: String, 
         required: false
     },
+    product_name: {
+        type: String, 
+        required: false
+    },
+    seller_name: {
+        type: String, 
+        required: false
+    },
+    email: {
+        type: String, 
+        required: false
+    },
+    review: {
+        type: Number,
+        unique: false
+    },
     name: {
         type: String,
         required: true
-    },
-    rating: {
-        type: Number,
-        unique: false
     },
     review: {
         type: String,
         unique: false
     },
-    ratings: {
-        type: Number,
-        unique: false
-    },
-    average_rating: {
+    rating: {
         type: Number,
         unique: false
     },
@@ -34,6 +42,10 @@ const ratingSchema = new Schema({
         type: String,
         required: false
     },
+    status: {
+		type: Boolean,
+		default: false
+	},
     created_at: {
         type: String,
     },

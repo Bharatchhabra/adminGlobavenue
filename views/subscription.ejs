@@ -14,12 +14,19 @@
     <div class="card mb-3">
         <div class="card-header">
             <div class="row">
-                <div class="col-md-10">
+                <div class="col-md-8">
                     <i class="fas fa-table"></i> Plan & Pricing
-                  </div>
-                  <div class="col-md-2">
-                    <a href="/add_new_plan" class="btn btn-primary btn-block" title="Plan">Add New Plan</a>
-                  </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="row clearfix">
+                         <div class="col-md-6"> 
+                            <a href="/export_to_plans" class="btn btn-primary btn-block" title="Plan">Export CSV</a>
+                        </div>
+                         <div class="col-md-6">
+                            <a href="/add_new_plan" class="btn btn-primary btn-block" title="Plan">Add New Plan</a>
+                         </div>
+                    </div>   
+                </div>
             </div>
         </div>
     </div>
@@ -54,37 +61,33 @@
                         {
                             %>
                                 <tr>
-                                <td><%= plan_list[i].plan_name %></td>	
-                                <td><%= plan_list[i].plan_Validity%> Days</td>	
-                                <td><%= plan_list[i].plan_price %></td>
-                                <td><%= plan_list[i].post_validity %></td>
-                                <td>
-                                    <%
-                                    if(plan_list[i].status == true)
-                                    {
-                                        %>
-                                        Active
+                                    <td><%= plan_list[i].plan_name %></td>	
+                                    <td><%= plan_list[i].plan_Validity%> Days</td>	
+                                    <td><%= plan_list[i].plan_price %></td>
+                                    <td><%= plan_list[i].post_validity %></td>
+                                    <td>
                                         <%
-                                    }
-                                    else
-                                    {
+                                            if(plan_list[i].status == true)
+                                            {
+                                                %>
+                                                Active
+                                                <%
+                                            }
+                                            else
+                                            {
+                                                %>
+                                                Inactive
+                                                <%
+                                            }
                                         %>
-                                        Inactive
-                                        <%
-                                    }
-                                    %>
-                                </td>
-                                <td>
-                                    <!-- <a href="/editplan/<%= plan_list[i]._id %>">
-                                        <i class="fas fa-edit text-info"></i>
-                                    </a> -->
-                                    <a href="/editplan/<%= plan_list[i]._id %>" class="btn btn-primary btn-sm">
-                                        <i class="fas fa-edit text-white"></i>&nbsp;&nbsp;Edit
-                                    </a>
-                                    &nbsp;
-                                    <a class="btn btn-danger btn-sm text-white" onClick="removeDetails('removeplan','<%= plan_list[i]._id %>')" ><i class="fas fa-trash text-white" style="cursor:pointer"></i>&nbsp;&nbsp;Delete</a>											
-                                    <!-- <i class="fas fa-trash text-danger" onClick="removeDetails('removeplan','<%= plan_list[i]._id %>')" style="cursor:pointer"></i> -->
-                                </td>
+                                    </td>
+                                    <td>
+                                        <a href="/editplan/<%= plan_list[i]._id %>" class="btn btn-primary btn-sm">
+                                            <i class="fas fa-edit text-white"></i>&nbsp;&nbsp;Edit
+                                        </a>
+                                        &nbsp;
+                                        <a class="btn btn-danger btn-sm text-white" onClick="removeDetails('removeplan','<%= plan_list[i]._id %>')" ><i class="fas fa-trash text-white" style="cursor:pointer"></i>&nbsp;&nbsp;Delete</a>											
+                                    </td>
                                 </tr>
                             <%
                         }

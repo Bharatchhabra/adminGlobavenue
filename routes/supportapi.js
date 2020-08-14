@@ -29,16 +29,28 @@ var upload = multer({ storage: storage })
 
 /* model */ 
 const Users = mongoose.model("Users")
+const planSchema = mongoose.model("Plan")
+const boatsSchema = mongoose.model("Boats")
+const ratingSchema = mongoose.model("Rating")
+const contactSchema = mongoose.model("Contact")
+const globtechSchema = mongoose.model("Globtech")
+const selectPlanSchema = mongoose.model("User_plan")
 const realestateSchema = mongoose.model("Realestate")
 const automobileSchema = mongoose.model("Automobile")
-const planSchema = mongoose.model("Plan")
-const selectPlanSchema = mongoose.model("User_plan")
-const boatsSchema = mongoose.model("Boats")
-const globtechSchema = mongoose.model("Globtech")
-const ratingSchema = mongoose.model("Rating")
+
+// testing schema
+const aboutSchema = mongoose.model("About")
+const Privacy_policySchema = mongoose.model("Privacy_policy")
+const terms_of_serviceSchema = mongoose.model("Terms_of_service")
+const contactusSchema = mongoose.model("Contactus")
+const faqSchema = mongoose.model("Faq")
+const viewerSchema = mongoose.model("Viewer_user")
+const helpSchema = mongoose.model("Help")
+const abuseSchema = mongoose.model("Abuse")
+
+
 
 /* register API Functionality */ 
-
 /*
 router.post("/register", upload.single('logo_upload'), async (req, res) => { 
 	var email = req.body.email;
@@ -143,14 +155,14 @@ router.post("/registerUser",  async (req, res) => {
 		res.status(HttpStatus.CONFLICT).json({status : HttpStatus.CONFLICT, msg : "Email already exists"});
 		return;
 	}
-	if (username.length > 3) {
-        res.status(HttpStatus.LENGTH_REQUIRED).json({status : HttpStatus.LENGTH_REQUIRED, msg : "Username must be greater than 2 characters"});
-		return;
-	}
-	if (username.length < 20) {
-        res.status(HttpStatus.LENGTH_REQUIRED).json({status : HttpStatus.LENGTH_REQUIRED, msg : "Username must be less than 20 characters"});
-		return;
-	}
+	// if (username.length > 3) {
+    //     res.status(HttpStatus.LENGTH_REQUIRED).json({status : HttpStatus.LENGTH_REQUIRED, msg : "Username must be greater than 2 characters"});
+	// 	return;
+	// }
+	// if (username.length < 20) {
+    //     res.status(HttpStatus.LENGTH_REQUIRED).json({status : HttpStatus.LENGTH_REQUIRED, msg : "Username must be less than 20 characters"});
+	// 	return;
+	// }
 	if(email_)
 	{
 		var re = /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
@@ -1366,6 +1378,7 @@ router.post('/deleteGlobtech', async (req, res) => {
 
 /* ------------------------------- End GlobeTech API ----------------------------------- */
 
+
 /* submit Rating And Review API */
 router.post('/submitRatingAndReview', async (req, res) => {
 	var name = req.body.name;
@@ -1431,5 +1444,183 @@ router.get('/averageRating', async (req, res, next) => {
 });
 
 
+/* contactSchema API */
+router.post('/submitContactInfo', async (req, res, next) => {
+	if(req.body.seller_id == undefined || req.body.seller_id == null) {
+		res.status(HttpStatus.NOT_FOUND).json({error_msg: "seller_id cannot be blank"});
+		return;
+	}
+	if(req.body.first_name == undefined || req.body.first_name == null) {
+		res.status(HttpStatus.NOT_FOUND).json({error_msg: "first_name cannot be blank"});
+		return;
+	}
+	if(req.body.email == undefined || req.body.email == null) {
+		res.status(HttpStatus.NOT_FOUND).json({error_msg: "email cannot be blank"});
+		return;
+	}
+	if(req.body.phone_number == undefined || req.body.phone_number == null) {
+		res.status(HttpStatus.NOT_FOUND).json({error_msg: "phone_number cannot be blank"});
+		return;
+	}
+	if(req.body.address == undefined || req.body.address == null) {
+		res.status(HttpStatus.NOT_FOUND).json({error_msg: "address cannot be blank"});
+		return;
+	}
+
+	var phone_number = req.body.phone_number;
+	var first_name = req.body.first_name;
+	var seller_id = req.body.seller_id;
+	var email = req.body.email;
+		
+	if(seller_id != '' && first_name != '' && email != '' && phone_number != '')
+	{
+		let contactDetails = new contactSchema({
+			email : email,
+			seller_id: seller_id,
+			first_name: first_name,
+			phone_number : phone_number,
+			last_name : req.body.last_name,
+			country : req.body.country,
+			city : req.body.city,
+			location : req.body.location,
+			address : req.body.address,
+			state : req.body.state,
+			zip_code : req.body.zip_code,
+			status: true,
+		});
+		contactDetails.save(function(error, created) {
+			console.log('err : ', error);
+			if(created) {
+				res.status(200).json({success: true, msg:'submit contact successfully.', created});
+				return;
+			}
+			else
+			{
+				res.status(400).json({success: false, msg:'not submit'});
+				return;
+			}
+		})
+	}
+	else
+	{
+		res.status(400).json({success: false, msg : ' Fill all require field** '});
+		return;
+	}	
+});
+
+/* contact By Limit  API*/
+router.get('/getContactByLimit', async (req, res) => {
+	let contact = await contactSchema.find({'status': true}).sort({_id:-1}).limit(2)
+	
+	if(contact!= undefined && contact.length>0) {
+		res.status(HttpStatus.OK).json({ success: true, contact});
+		return;
+	}
+	else
+	{
+		res.status(HttpStatus.NOT_FOUND).json({success: false, msg:"no contact list found"});
+		return;
+	}
+});
+
+/* contact list API*/
+router.get('/getContactList', async (req, res) => {
+	let contact = await contactSchema.find({'status': true}).sort({_id:-1});
+	
+	if(contact!= undefined && contact.length>0) {
+		res.status(HttpStatus.OK).json({ success: true, contact});
+		return;
+	}
+	else
+	{
+		res.status(HttpStatus.NOT_FOUND).json({success: false, msg:"no contact list found"});
+		return;
+	}
+});
+
+/* TEST API For Send Date For Schema Like Help, FAQ, viewerUser,  */
+router.post('/submitHelp', async (req, res, next) => {
+	console.log('--> call API');
+	if(req.body.email == undefined || req.body.email == null) {
+		res.status(HttpStatus.NOT_FOUND).json({error_msg: "email cannot be blank"});
+		return;
+	}
+	var name = req.body.name;
+	var email = req.body.email;
+	var query = req.body.query;
+	var user_id = req.body.user_id;
+	var user_type = req.body.user_type;
+	var dateTime = moment().format("ll");
+
+	if(email != '')
+	{
+		let helpDetails = new helpSchema({
+			name: name,
+			email: email,
+			query: query,
+			user_id: user_id,
+			user_type: user_type,
+			created_at: dateTime,
+			status: true,
+		});
+		helpDetails.save(function(error, created) {
+			console.log('err : ', error);
+			if(created) {
+				res.status(200).json({success: true, msg:'submit successfully.', created});
+				return;
+			}
+			else
+			{
+				res.status(400).json({success: false, msg:'user already exists'});
+				return;
+			}
+		})
+	}
+	else
+	{
+		res.status(400).json({success: false, msg : ' Fill all require field** '});
+		return;
+	}	
+});
+
+/* TEST API For Send Date For Schema abuse  */
+router.post('/abuse', async (req, res, next) => {
+	if(req.body.email == undefined || req.body.email == null) {
+		res.status(HttpStatus.NOT_FOUND).json({error_msg: "email cannot be blank"});
+		return;
+	}
+	var email = req.body.email;
+	var dateTime = moment().format("ll");
+	if(email != '')
+	{
+		let abuseDetails = new abuseSchema({
+			ads: req.body.ads,
+			name: req.body.name,
+			email: req.body.email,
+			user_id: req.body.user_id,
+			user_type: req.body.user_type,
+			description: req.body.description,
+			created_at: dateTime,
+			status: true,
+		});
+		abuseDetails.save(function(error, created) {
+			console.log('Error : ', error);
+			if(created) {
+				res.status(200).json({success: true, msg:'submit successfully.', created});
+				return;
+			}
+			else
+			{
+				res.status(400).json({success: false, msg:'user already exists'});
+				return;
+			}
+		})
+	}
+	else
+	{
+		res.status(400).json({success: false, msg : ' Fill all require field** '});
+		return;
+	}	
+});
 
 module.exports = router;
